@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Procedures</title>
+  <title>Machine procedures</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -18,9 +18,7 @@
       --radius: 14px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -38,9 +36,7 @@
       max-width: 1100px;
     }
 
-    header {
-      margin-bottom: 24px;
-    }
+    header { margin-bottom: 24px; }
 
     .title {
       font-size: 26px;
@@ -118,7 +114,7 @@
     .grid {
       margin-top: 18px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 14px;
     }
 
@@ -129,8 +125,7 @@
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      cursor: pointer;
+      gap: 8px;
       transition: transform 0.12s ease-out,
                   box-shadow 0.12s ease-out,
                   border-color 0.12s ease-out,
@@ -186,6 +181,37 @@
       font-size: 11px;
     }
 
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 8px;
+      text-align: center;
+      cursor: pointer;
+      outline: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-primary {
+      border-color: var(--accent-soft);
+    }
+
+    .btn:hover {
+      background: #020617;
+    }
+
     .empty {
       margin-top: 40px;
       text-align: center;
@@ -199,9 +225,7 @@
     }
 
     @media (max-width: 600px) {
-      body {
-        padding: 14px;
-      }
+      body { padding: 14px; }
     }
   </style>
 </head>
@@ -210,16 +234,16 @@
     <header>
       <div class="title">
         <span class="icon">📘</span>
-        <span>Procedures</span>
+        <span>Machine procedures</span>
       </div>
       <div class="subtitle">
-        Scannez the QR code, find the procedure, then open the PDF in one click.
+        Scan the QR code on the machine, then open the matching procedure in one click.
       </div>
 
       <div class="toolbar">
         <div class="search-box">
           <span class="icon">🔍</span>
-          <input id="search" type="text" placeholder="Look for a procedure (machine name, type…)" />
+          <input id="search" type="text" placeholder="Search a procedure (machine name, type…)" />
         </div>
         <div class="badge" id="counter">0 document</div>
       </div>
@@ -228,7 +252,7 @@
     <main>
       <div id="grid" class="grid"></div>
       <div id="empty" class="empty" style="display:none;">
-        No document found.
+        No document found. Try another keyword or check that there are PDF files in the <code>public</code> branch.
       </div>
     </main>
   </div>
@@ -259,18 +283,81 @@
     function formatSize(bytes) {
       if (!bytes && bytes !== 0) return "";
       const kb = bytes / 1024;
-      if (kb < 1024) return kb.toFixed(1) + " Ko";
+      if (kb < 1024) return kb.toFixed(1) + " KB";
       const mb = kb / 1024;
-      return mb.toFixed(2) + " Mo";
+      return mb.toFixed(2) + " MB";
     }
 
     function guessTag(name) {
       const n = name.toLowerCase();
-      if (n.includes("secur") || n.includes("sûreté")) return "Sécurité";
+      if (n.includes("safety")) return "Safety";
       if (n.includes("maintenance")) return "Maintenance";
-      if (n.includes("nettoyage") || n.includes("clean")) return "Nettoyage";
-      if (n.includes("start") || n.includes("démarrage")) return "Démarrage";
-      return "Procédure";
+      if (n.includes("clean")) return "Cleaning";
+      if (n.includes("start") || n.includes("setup")) return "Startup";
+      return "Procedure";
+    }
+
+    function openQrPrint(url, title) {
+      const escapedUrl = url.replace(/"/g, '&quot;');
+      const escapedTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      const w = window.open("", "_blank");
+      w.document.write(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QR code - ${escapedTitle}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  #qrcode {
+    margin-bottom: 16px;
+  }
+  .hint {
+    font-size: 12px;
+    color: #4b5563;
+    text-align: center;
+  }
+  @media print {
+    body {
+      justify-content: flex-start;
+      margin-top: 40px;
+    }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+  <h1>${escapedTitle}</h1>
+  <div id="qrcode"></div>
+  <div class="hint">Scan to open this procedure directly.</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    window.onload = function() {
+      new QRCode(document.getElementById("qrcode"), {
+        text: "${escapedUrl}",
+        width: 220,
+        height: 220
+      });
+      // Uncomment if you want to auto-open the print dialog:
+      // window.print();
+    };
+  </script>
+</body>
+</html>`);
+      w.document.close();
     }
 
     function render(files) {
@@ -287,12 +374,10 @@
         const cleanName = formatName(file.name);
         const tag = guessTag(cleanName);
         const sizeText = formatSize(file.size);
+        const fileUrl = baseUrl + encodeURIComponent(file.name);
 
-        const card = document.createElement("a");
+        const card = document.createElement("div");
         card.className = "card";
-        card.href = baseUrl + encodeURIComponent(file.name);
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
 
         card.innerHTML = `
           <div class="card-header">
@@ -307,6 +392,26 @@
           </div>
         `;
 
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const btnOpen = document.createElement("a");
+        btnOpen.className = "btn btn-primary";
+        btnOpen.href = fileUrl;
+        btnOpen.target = "_blank";
+        btnOpen.rel = "noopener noreferrer";
+        btnOpen.textContent = "Open";
+
+        const btnQr = document.createElement("button");
+        btnQr.type = "button";
+        btnQr.className = "btn";
+        btnQr.textContent = "Print QR";
+        btnQr.addEventListener("click", () => openQrPrint(fileUrl, cleanName));
+
+        actions.appendChild(btnOpen);
+        actions.appendChild(btnQr);
+        card.appendChild(actions);
+
         grid.appendChild(card);
       });
     }
@@ -315,13 +420,12 @@
       try {
         const res = await fetch(apiUrl);
         const data = await res.json();
-        // On garde uniquement les PDF à la racine
         allFiles = (Array.isArray(data) ? data : [])
           .filter(f => f.type === "file" && f.name.toLowerCase().endsWith(".pdf"));
 
         render(allFiles);
       } catch (e) {
-        console.error("Erreur chargement fichiers", e);
+        console.error("Error loading files", e);
         empty.style.display = "block";
         empty.textContent = "Error while loading documents.";
       }
@@ -344,4 +448,3 @@
   </script>
 </body>
 </html>
-
