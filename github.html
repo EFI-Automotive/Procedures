@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Procédures machines</title>
+<style>
+  body { font-family: Arial; margin: 40px; }
+  h1 { font-size: 24px; }
+  ul { list-style: none; padding: 0; }
+  li { margin: 8px 0; }
+  a { color: #0070ff; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<h1>📄 Liste des procédures</h1>
+<ul id="file-list">Chargement…</ul>
+
+<script>
+// CONFIG — à adapter
+const user = "<TON_USER_GITHUB>";
+const repo = "<TON_REPO>";
+const branch = "public";
+
+async function loadFiles() {
+  const url = `https://api.github.com/repos/${user}/${repo}/contents/?ref=${branch}`;
+  const res = await fetch(url);
+  const files = await res.json();
+
+  const list = document.getElementById("file-list");
+  list.innerHTML = "";
+
+  files
+    .filter(f => f.name.endsWith(".pdf"))
+    .forEach(f => {
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${f.name}" target="_blank">${f.name}</a>`;
+      list.appendChild(li);
+    });
+}
+
+loadFiles();
+</script>
+
+</body>
+</html>
