@@ -1,45 +1,346 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<title>Procédures machines</title>
-<style>
-  body { font-family: Arial; margin: 40px; }
-  h1 { font-size: 24px; }
-  ul { list-style: none; padding: 0; }
-  li { margin: 8px 0; }
-  a { color: #0070ff; text-decoration: none; }
-</style>
+  <meta charset="utf-8">
+  <title>Procedures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-card: #111827;
+      --bg-card-hover: #1f2937;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.2);
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border: #1f2937;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0b1220, #020617);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    .title {
+      font-size: 26px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title span.icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1 1 240px;
+      max-width: 360px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 9px 32px 9px 30px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+
+    .search-box input::placeholder {
+      color: #6b7280;
+    }
+
+    .search-box span.icon {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 12px 12px 10px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: transform 0.12s ease-out,
+                  box-shadow 0.12s ease-out,
+                  border-color 0.12s ease-out,
+                  background 0.12s ease-out;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      background: var(--bg-card-hover);
+      border-color: var(--accent-soft);
+      box-shadow: 0 12px 25px rgba(15, 23, 42, 0.8);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: radial-gradient(circle at top left, var(--accent), #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      color: #e5f2ff;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    .card-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #1f2937;
+      font-size: 11px;
+    }
+
+    .empty {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 14px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <span class="icon">📘</span>
+        <span>Procedures</span>
+      </div>
+      <div class="subtitle">
+        Scannez the QR code, find the procedure, then open the PDF in one click.
+      </div>
 
-<h1>📄 Liste des procédures</h1>
-<ul id="file-list">Chargement…</ul>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="icon">🔍</span>
+          <input id="search" type="text" placeholder="Rechercher une procédure (nom de machine, type…)" />
+        </div>
+        <div class="badge" id="counter">0 document</div>
+      </div>
+    </header>
 
-<script>
-const user = "efi-automotive";
-const repo = "procedures";
-const branch = "public";
+    <main>
+      <div id="grid" class="grid"></div>
+      <div id="empty" class="empty" style="display:none;">
+        No document found.
+      </div>
+    </main>
+  </div>
 
-async function loadFiles() {
-  const url = `https://api.github.com/repos/${user}/${repo}/contents/?ref=${branch}`;
-  const res = await fetch(url);
-  const files = await res.json();
+  <script>
+    const user = "EFI-Automotive";
+    const repo = "Procedures";
+    const branch = "public";
 
-  const list = document.getElementById("file-list");
-  list.innerHTML = "";
+    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/?ref=${branch}`;
+    const baseUrl = `https://${user}.github.io/${repo}/`;
 
-  files
-    .filter(f => f.name.endsWith(".pdf"))
-    .forEach(f => {
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="${f.name}" target="_blank">${f.name}</a>`;
-      list.appendChild(li);
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+    const searchInput = document.getElementById("search");
+    const counter = document.getElementById("counter");
+
+    let allFiles = [];
+
+    function formatName(filename) {
+      return filename
+        .replace(/\.pdf$/i, "")
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function formatSize(bytes) {
+      if (!bytes && bytes !== 0) return "";
+      const kb = bytes / 1024;
+      if (kb < 1024) return kb.toFixed(1) + " Ko";
+      const mb = kb / 1024;
+      return mb.toFixed(2) + " Mo";
+    }
+
+    function guessTag(name) {
+      const n = name.toLowerCase();
+      if (n.includes("secur") || n.includes("sûreté")) return "Sécurité";
+      if (n.includes("maintenance")) return "Maintenance";
+      if (n.includes("nettoyage") || n.includes("clean")) return "Nettoyage";
+      if (n.includes("start") || n.includes("démarrage")) return "Démarrage";
+      return "Procédure";
+    }
+
+    function render(files) {
+      grid.innerHTML = "";
+      if (!files.length) {
+        empty.style.display = "block";
+        counter.textContent = "0 document";
+        return;
+      }
+      empty.style.display = "none";
+      counter.textContent = files.length + (files.length > 1 ? " documents" : " document");
+
+      files.forEach(file => {
+        const cleanName = formatName(file.name);
+        const tag = guessTag(cleanName);
+        const sizeText = formatSize(file.size);
+
+        const card = document.createElement("a");
+        card.className = "card";
+        card.href = baseUrl + encodeURIComponent(file.name);
+        card.target = "_blank";
+        card.rel = "noopener noreferrer";
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="file-icon">PDF</div>
+            <div>
+              <div class="card-title">${cleanName}</div>
+              <div class="card-meta">
+                <span>${sizeText || ""}</span>
+                <span class="pill">${tag}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    async function loadFiles() {
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        // On garde uniquement les PDF à la racine
+        allFiles = (Array.isArray(data) ? data : [])
+          .filter(f => f.type === "file" && f.name.toLowerCase().endsWith(".pdf"));
+
+        render(allFiles);
+      } catch (e) {
+        console.error("Erreur chargement fichiers", e);
+        empty.style.display = "block";
+        empty.textContent = "Error while loading documents.";
+      }
+    }
+
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.toLowerCase().trim();
+      if (!q) {
+        render(allFiles);
+        return;
+      }
+      const filtered = allFiles.filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        formatName(f.name).toLowerCase().includes(q)
+      );
+      render(filtered);
     });
-}
 
-loadFiles();
-</script>
-
+    loadFiles();
+  </script>
 </body>
 </html>
