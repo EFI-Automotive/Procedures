@@ -5,6 +5,9 @@
   <title>Machine procedures</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- Favicon: put a file named favicon.ico or favicon.png in the root of the public branch -->
+  <link rel="icon" href="favicon.ico">
+
   <style>
     :root {
       --bg: #0f172a;
@@ -31,12 +34,17 @@
       justify-content: center;
     }
 
-    .app {
-      width: 100%;
-      max-width: 1100px;
-    }
+    .app { width: 100%; max-width: 1150px; }
 
     header { margin-bottom: 24px; }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
     .title {
       font-size: 26px;
@@ -109,6 +117,26 @@
       color: var(--text-muted);
     }
 
+    .button {
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--accent);
+      font-size: 13px;
+      padding: 7px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      outline: none;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .button:hover {
+      background: var(--accent-soft);
+    }
+
     .grid {
       margin-top: 18px;
       display: grid;
@@ -123,7 +151,7 @@
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       transition: transform 0.12s ease-out,
                   box-shadow 0.12s ease-out,
                   border-color 0.12s ease-out,
@@ -137,10 +165,11 @@
       box-shadow: 0 12px 25px rgba(15, 23, 42, 0.8);
     }
 
-    .card-header {
+    .card-main {
       display: flex;
       align-items: center;
       gap: 10px;
+      cursor: pointer;
     }
 
     .file-icon {
@@ -179,31 +208,30 @@
       font-size: 11px;
     }
 
-    .actions {
+    .card-actions {
       display: flex;
-      gap: 8px;
-      margin-top: 4px;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
     }
 
-    .btn {
-      flex: 1;
+    .btn-sm {
       border-radius: 999px;
-      border: 1px solid var(--border);
+      border: 1px solid #1f2937;
       background: rgba(15, 23, 42, 0.9);
-      color: var(--text);
-      font-size: 12px;
-      padding: 6px 8px;
-      text-align: center;
-      cursor: pointer;
-      outline: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 4px 9px;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 4px;
+      cursor: pointer;
     }
 
-    .btn-primary { border-color: var(--accent-soft); }
-    .btn:hover { background: #020617; }
+    .btn-sm:hover {
+      border-color: var(--accent-soft);
+      color: var(--accent);
+    }
 
     .empty {
       margin-top: 40px;
@@ -212,22 +240,54 @@
       font-size: 14px;
     }
 
-    a { color: inherit; text-decoration: none; }
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: #111827;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      border: 1px solid var(--accent-soft);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+      z-index: 50;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
 
     @media (max-width: 600px) {
       body { padding: 14px; }
+      .title { font-size: 22px; }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div class="title">
-        <span class="icon">📘</span>
-        <span>Machine procedures</span>
-      </div>
-      <div class="subtitle">
-        Scan the machine QR code, then open or print a QR for the matching procedure.
+      <div class="top-row">
+        <div>
+          <div class="title">
+            <span class="icon">📘</span>
+            <span>Machine procedures</span>
+          </div>
+          <div class="subtitle">
+            Open the PDF for each machine, copy its link, and generate a QR code in one click.
+          </div>
+        </div>
+        <div>
+          <button id="uploadButton" class="button" type="button">
+            <span>⬆️</span>
+            <span>Upload document</span>
+          </button>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -235,32 +295,48 @@
           <span class="icon">🔍</span>
           <input id="search" type="text" placeholder="Search a procedure (machine name, type…)" />
         </div>
-        <div class="badge" id="counter">0 document</div>
+        <div class="badge" id="counter">0 documents</div>
       </div>
     </header>
 
     <main>
       <div id="grid" class="grid"></div>
       <div id="empty" class="empty" style="display:none;">
-        No document found. Check that there are PDF files in the <code>public</code> branch.
+        No document found. Try another search term or check that there are PDF files in the <code>public</code> branch.
       </div>
     </main>
   </div>
 
+  <div id="toast" class="toast">Link copied to clipboard</div>
+
   <script>
-    const user = "EFI-Automotive";
-    const repo = "Procedures";
+    // 🔧 CONFIGURATION — adapt if needed
+    const user   = "EFI-Automotive";
+    const repo   = "Procedures";
     const branch = "public";
 
-    const apiUrl = "https://api.github.com/repos/" + user + "/" + repo + "/contents/?ref=" + branch;
-    const baseUrl = "https://" + user + ".github.io/" + repo + "/";
-
-    const grid = document.getElementById("grid");
-    const empty = document.getElementById("empty");
+    const apiUrl      = `https://api.github.com/repos/${user}/${repo}/contents/?ref=${branch}`;
+    const baseUrl     = `https://${user}.github.io/${repo}/`;
+    const uploadUrl   = `https://github.com/${user}/${repo}/upload/${branch}`;
+    const qrSiteUrl   = "https://www.qr-code-generator.com/";
+    const toastEl     = document.getElementById("toast");
+    const grid        = document.getElementById("grid");
+    const empty       = document.getElementById("empty");
     const searchInput = document.getElementById("search");
-    const counter = document.getElementById("counter");
+    const counter     = document.getElementById("counter");
+    const uploadBtn   = document.getElementById("uploadButton");
 
     let allFiles = [];
+
+    uploadBtn.addEventListener("click", () => {
+      window.open(uploadUrl, "_blank");
+    });
+
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      setTimeout(() => toastEl.classList.remove("show"), 1800);
+    }
 
     function formatName(filename) {
       return filename
@@ -271,7 +347,7 @@
     }
 
     function formatSize(bytes) {
-      if (bytes === undefined || bytes === null) return "";
+      if (!bytes && bytes !== 0) return "";
       const kb = bytes / 1024;
       if (kb < 1024) return kb.toFixed(1) + " KB";
       const mb = kb / 1024;
@@ -283,119 +359,120 @@
       if (n.includes("safety")) return "Safety";
       if (n.includes("maintenance")) return "Maintenance";
       if (n.includes("clean")) return "Cleaning";
-      if (n.includes("start") || n.includes("setup")) return "Startup";
+      if (n.includes("start") || n.includes("setup")) return "Start-up";
       return "Procedure";
     }
 
-    function openQrPrint(url, title) {
-      var escapedUrl = url.replace(/"/g, "&quot;");
-      var escapedTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-      var w = window.open("", "_blank");
-      if (!w) return;
-
-      var html = "";
-      html += "<!doctype html>";
-      html += "<html lang=\"en\">";
-      html += "<head>";
-      html += "<meta charset=\"utf-8\">";
-      html += "<title>QR code - " + escapedTitle + "</title>";
-      html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
-      html += "<style>";
-      html += "body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}";
-      html += "h1{font-size:18px;margin-bottom:16px;text-align:center;}";
-      html += "#qrcode{margin-bottom:16px;}";
-      html += ".hint{font-size:12px;color:#4b5563;text-align:center;}";
-      html += "@media print{body{justify-content:flex-start;margin-top:40px;}.hint{display:none;}}";
-      html += "</style>";
-      html += "</head>";
-      html += "<body>";
-      html += "<h1>" + escapedTitle + "</h1>";
-      html += "<div id=\"qrcode\"></div>";
-      html += "<div class=\"hint\">Scan to open this procedure directly.</div>";
-
-      // Important: avoid literal </script> to not break the parent script
-      html += "<scr" + "ipt src=\"https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js\"></scr" + "ipt>";
-      html += "<scr" + "ipt>";
-      html += "window.onload=function(){";
-      html += "new QRCode(document.getElementById('qrcode'),{text:'" + escapedUrl + "',width:220,height:220});";
-      html += "};";
-      html += "</scr" + "ipt>";
-
-      html += "</body>";
-      html += "</html>";
-
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
+    function gitHubDeleteUrl(fileName) {
+      // This opens the GitHub UI “delete this file” page
+      return `https://github.com/${user}/${repo}/delete/${branch}/${encodeURIComponent(fileName)}`;
     }
 
     function render(files) {
       grid.innerHTML = "";
       if (!files.length) {
         empty.style.display = "block";
-        counter.textContent = "0 document";
+        counter.textContent = "0 documents";
         return;
       }
       empty.style.display = "none";
       counter.textContent = files.length + (files.length > 1 ? " documents" : " document");
 
-      files.forEach(function(file) {
-        var cleanName = formatName(file.name);
-        var tag = guessTag(cleanName);
-        var sizeText = formatSize(file.size);
-        var fileUrl = baseUrl + encodeURIComponent(file.name);
+      files.forEach(file => {
+        const cleanName = formatName(file.name);
+        const tag = guessTag(cleanName);
+        const sizeText = formatSize(file.size);
+        const fileUrl = baseUrl + encodeURIComponent(file.name);
+        const deleteUrl = gitHubDeleteUrl(file.name);
 
-        var card = document.createElement("div");
+        const card = document.createElement("div");
         card.className = "card";
 
-        card.innerHTML =
-          "<div class=\"card-header\">" +
-            "<div class=\"file-icon\">PDF</div>" +
-            "<div>" +
-              "<div class=\"card-title\">" + cleanName + "</div>" +
-              "<div class=\"card-meta\">" +
-                "<span>" + (sizeText || "") + "</span>" +
-                "<span class=\"pill\">" + tag + "</span>" +
-              "</div>" +
-            "</div>" +
-          "</div>";
-
-        var actions = document.createElement("div");
-        actions.className = "actions";
-
-        var btnOpen = document.createElement("a");
-        btnOpen.className = "btn btn-primary";
-        btnOpen.href = fileUrl;
-        btnOpen.target = "_blank";
-        btnOpen.rel = "noopener noreferrer";
-        btnOpen.textContent = "Open";
-
-        var btnQr = document.createElement("button");
-        btnQr.type = "button";
-        btnQr.className = "btn";
-        btnQr.textContent = "Print QR";
-        btnQr.addEventListener("click", function() {
-          openQrPrint(fileUrl, cleanName);
+        const cardMain = document.createElement("div");
+        cardMain.className = "card-main";
+        cardMain.addEventListener("click", () => {
+          window.open(fileUrl, "_blank");
         });
 
-        actions.appendChild(btnOpen);
-        actions.appendChild(btnQr);
-        card.appendChild(actions);
+        cardMain.innerHTML = `
+          <div class="file-icon">PDF</div>
+          <div>
+            <div class="card-title">${cleanName}</div>
+            <div class="card-meta">
+              <span>${sizeText || ""}</span>
+              <span class="pill">${tag}</span>
+            </div>
+          </div>
+        `;
 
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+
+        // Open button (optional, the card click does it too)
+        const openBtn = document.createElement("button");
+        openBtn.type = "button";
+        openBtn.className = "btn-sm";
+        openBtn.innerHTML = "🔓 Open";
+        openBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          window.open(fileUrl, "_blank");
+        });
+
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "btn-sm";
+        copyBtn.innerHTML = "📋 Copy link";
+        copyBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          try {
+            await navigator.clipboard.writeText(fileUrl);
+            showToast("Link copied to clipboard");
+          } catch {
+            showToast("Unable to copy link");
+          }
+        });
+
+        const qrBtn = document.createElement("button");
+        qrBtn.type = "button";
+        qrBtn.className = "btn-sm";
+        qrBtn.innerHTML = "🔗 QR code";
+        qrBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          try {
+            await navigator.clipboard.writeText(fileUrl);
+            showToast("Link copied – paste it into the QR generator");
+          } catch {
+            showToast("Link ready – open QR generator");
+          }
+          window.open(qrSiteUrl, "_blank");
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "btn-sm";
+        delBtn.innerHTML = "🗑 Delete on GitHub";
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          window.open(deleteUrl, "_blank");
+        });
+
+        actions.appendChild(openBtn);
+        actions.appendChild(copyBtn);
+        actions.appendChild(qrBtn);
+        actions.appendChild(delBtn);
+
+        card.appendChild(cardMain);
+        card.appendChild(actions);
         grid.appendChild(card);
       });
     }
 
     async function loadFiles() {
       try {
-        var res = await fetch(apiUrl);
-        var data = await res.json();
+        const res = await fetch(apiUrl);
+        const data = await res.json();
         allFiles = (Array.isArray(data) ? data : [])
-          .filter(function(f) {
-            return f.type === "file" && f.name.toLowerCase().endsWith(".pdf");
-          });
-
+          .filter(f => f.type === "file" && f.name.toLowerCase().endsWith(".pdf"));
         render(allFiles);
       } catch (e) {
         console.error("Error loading files", e);
@@ -404,16 +481,16 @@
       }
     }
 
-    searchInput.addEventListener("input", function() {
-      var q = searchInput.value.toLowerCase().trim();
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.toLowerCase().trim();
       if (!q) {
         render(allFiles);
         return;
       }
-      var filtered = allFiles.filter(function(f) {
-        return f.name.toLowerCase().includes(q) ||
-               formatName(f.name).toLowerCase().includes(q);
-      });
+      const filtered = allFiles.filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        formatName(f.name).toLowerCase().includes(q)
+      );
       render(filtered);
     });
 
